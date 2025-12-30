@@ -84,7 +84,7 @@ This is an implementation of our work "Baking Gaussian Splatting into Diffusion 
   </tr>
   <tr>
     <td align="center" style="padding-top:0px;font-style:italic;">
-      Prompt Image at Any Viewpoints
+      Prompt Images at Any Viewpoints
     </td>
   </tr>
 </table>
