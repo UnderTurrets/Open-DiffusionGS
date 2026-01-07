@@ -116,7 +116,7 @@ class GaussiansUpsampler(nn.Module):
             (self.config.gaussians_sh_degree + 1) ** 2,
             3,
         )
-        #breakpoint()
+        # breakpoint()
         # torch.exp(torch.tensor(-2.3)) = 0.1
         # torch.exp(torch.tensor(-1.2)) = 0.3
         scaling = (scaling - 2.3).clamp(max=-1.20)
@@ -439,8 +439,8 @@ class DGSDenoiser(BaseModule):
                     gaussian_params.opacity,
                     height,
                     width,
-                    C2W=c2w,               #
-                    fxfycxcy=fxfycxcy,       # 
+                    C2W=c2w,
+                    fxfycxcy=fxfycxcy,
                 )
         return render_input
     

@@ -13,10 +13,8 @@ data:
   eval_subset: 16
   sel_views_train: 4
   training_res: [512, 512]
-  batch_size: 16
-  eval_batch_size: 32
+  batch_size: 32
   num_workers: 4
-  num_workers_val: 4
 
 system_type: "diffusion-gs-scene-system"
 system:

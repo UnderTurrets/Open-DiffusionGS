@@ -86,9 +86,9 @@ def get_turntable_cameras(
 
 
 def imageseq2video(images, filename, fps=24):
-    # if images is uint8, convert to float32
-    if images.dtype == np.uint8:
-        images = images.astype(np.float32) / 255.0
+    # imageio/ffmpeg expect uint8; enforce conversion to avoid float->uint8 warnings
+    if np.issubdtype(images.dtype, np.floating):
+        images = (images * 255.0).clip(0.0, 255.0).astype(np.uint8)
     imageio.mimwrite(filename, images, fps=fps, quality=8)
 
 
@@ -1199,7 +1199,7 @@ deferred_gaussian_render_scene = DeferredGaussianRender_scene.apply
 
 
 @torch.no_grad()
-@torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
+@torch.amp.custom_fwd(cast_inputs=torch.float32, device_type='cuda')
 def render_turntable(pc: GaussianModel, rendering_resolution=384, num_views=8):             # 渲染一圈图像 - 8 个 view
     w, h, v, fxfycxcy, c2w = get_turntable_cameras(
         h=rendering_resolution, w=rendering_resolution, num_views=num_views
@@ -1226,7 +1226,7 @@ class GaussianRenderer(nn.Module):
         self.sh_degree = sh_degree
         self.scaling_modifier = scaling_modifier
 
-    @torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
+    @torch.amp.custom_fwd(cast_inputs=torch.float32, device_type='cuda')
     def forward(
         self,
         xyz,
@@ -1298,7 +1298,7 @@ class GaussianRenderer(nn.Module):
 
 
 @torch.no_grad()
-@torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
+@torch.amp.custom_fwd(cast_inputs=torch.float32, device_type='cuda')
 def render_generic(pc: GaussianModel, c2ws, fxfycxcy,  h=512, w=512):
     # cw2s: [v, 4, 4]
     # fxfycxcy: [v, 4]

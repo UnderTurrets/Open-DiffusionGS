@@ -29,7 +29,6 @@ class PointDiffusionSystem(BaseSystem):
     class Config(BaseSystem.Config):
         num_inference_steps: int = 30
         snr: bool = True
-        #validate_metric: bool = False
         save_intermediate_video: bool = True
         save_result_for_eval: bool = False
         # shape vae model
@@ -38,9 +37,6 @@ class PointDiffusionSystem(BaseSystem):
         # noise scheduler
         noise_scheduler_type: str = None
         noise_scheduler: dict = field(default_factory=dict)
-        # loss
-        # denoise_scheduler_type: str = None
-        # denoise_scheduler: dict = field(default_factory=dict)
 
     cfg: Config
 
@@ -84,7 +80,7 @@ class PointDiffusionSystem(BaseSystem):
         sel_images[:,1:] = self.diffusion_training.q_sample(sel_images[:,1:], timesteps, noise=noise[:,1:])
         #sel_images[:,1:] = self.noise_scheduler.add_noise(sel_images[:,1:],noise[:,1:],timesteps)
         #
-        #breakpoint()
+        # breakpoint()
         guassians_parameters, img_aligned_xyz = self.shape_model.image_to_gaussians(sel_images, ray_o, ray_d, timesteps)
         ### 5. render image from gen gaussians
         rendered_images = self.shape_model.render_gaussians(guassians_parameters, batch['c2ws'], batch['fxfycxcys'], sel_images.shape[3],sel_images.shape[4])

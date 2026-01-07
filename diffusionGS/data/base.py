@@ -51,7 +51,6 @@ class BaseDataModuleConfig:
     image_dir: str = None
     batch_size: int = 32
     num_workers: int = 0
-    num_workers_val: int = 0
     default_fxfy: float = 1422.222 / 1024 
     gen_idxs: Optional[List[int]] = None #top down front left back right
     training_res: Optional[List[int]] = field(default_factory=lambda:[256,256])
@@ -166,7 +165,7 @@ class BaseDataset(Dataset):
         train_idxs = get_remaining_indices(sel_gen_idxs,self.cfg.all_idxs)
         sel_train_idxs = random.sample(train_idxs, k=self.cfg.sel_views) # hard code for 40 views [GOBJAVERSE]
         all_sel_idxs = sel_gen_idxs + sel_train_idxs
-        image_file_dirs = [self.cfg.image_dir + f"{uid}/campos_512_v4/{str(sel_idx).zfill(5)}" for sel_idx in all_sel_idxs]
+        image_file_dirs = [f"{self.cfg.image_dir}/" + f"{uid}/{str(sel_idx).zfill(5)}" for sel_idx in all_sel_idxs]
         # background color
         background_color = torch.as_tensor(self.cfg.background_color)
         rgbs = []
@@ -202,15 +201,28 @@ class BaseDataset(Dataset):
             ##
             normald_path = f"{prefix}_nd.exr"
             depth = read_dnormal(normald_path,c2w[:3, 3:])
-            masks.append(torch.tensor(mask))
-            depths.append(torch.tensor(depth))
+            # 避免重复包装 tensor 引发的警告，按类型处理
+            if isinstance(mask, torch.Tensor):
+                masks.append(mask.clone())
+            else:
+                masks.append(torch.as_tensor(mask))
+
+            if isinstance(depth, torch.Tensor):
+                depths.append(depth.clone())
+            else:
+                depths.append(torch.as_tensor(depth))
+
             rgbs.append(rgb)
-            c2ws.append(torch.tensor(c2w))
+
+            if isinstance(c2w, torch.Tensor):
+                c2ws.append(c2w.clone())
+            else:
+                c2ws.append(torch.as_tensor(c2w, dtype=torch.float32))
         ret['depths'] = torch.stack(depths).permute(0,3,1,2)
         ret['rgbs'] = torch.stack(rgbs).permute(0,3,1,2)
         ret['masks'] = torch.stack(masks).permute(0,3,1,2)
         ret['c2ws'] = torch.stack(c2ws).to(ret['rgbs'])
-        #breakpoint()
+        # breakpoint()
         #(torch.norm(ret['c2ws'][0, :3, 3], dim=-1))
         #OpenGL to COLMAP camera for Gaussian renderer
         ret['c2ws'][:, :3, 1:3] *= -1

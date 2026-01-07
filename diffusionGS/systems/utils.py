@@ -286,7 +286,7 @@ def euler_sample(ddim_scheduler,
     }
     
     #timesteps, num_inference_steps = retrieve_timesteps(ddim_scheduler, steps, device)
-    #breakpoint()
+    # breakpoint()
     # reverse
     for i, t in enumerate(tqdm(timesteps, disable=disable_prog, desc="Euler Sampling:", leave=False)):
         # expand the latents if we are doing classifier free guidance
@@ -295,7 +295,7 @@ def euler_sample(ddim_scheduler,
             if do_classifier_free_guidance
             else latents
         )
-        #breakpoint()
+        # breakpoint()
         # predict the noise residual
         timestep_tensor = torch.tensor(t.clone().detach(), dtype=torch.long, device=device)
         timestep_tensor = timestep_tensor.expand(latent_model_input.shape[0])
@@ -768,7 +768,8 @@ def display_timestep_on_video(frames, timesteps):
     ), f"len(frames) {len(frames)} != len(timesteps) {len(timesteps)}"
 
     dtype = frames.dtype
-    if dtype == np.float32:
+    if np.issubdtype(dtype, np.floating):
+        # Ensure video writer receives uint8 data and avoid lossy-conversion warnings
         frames = (frames * 255.0).clip(0.0, 255.0).astype(np.uint8)
 
     # Use putText() method for

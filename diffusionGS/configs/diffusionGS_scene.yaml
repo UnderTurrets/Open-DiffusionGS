@@ -14,7 +14,6 @@ data:
   sel_views_train: 4
   training_res: [256, 256]
   batch_size: 24
-  eval_batch_size: 1
   num_workers: 4
   
 
@@ -22,7 +21,6 @@ system_type: "diffusion-gs-scene-system"
 system:
   num_inference_steps: 30
   save_intermediate_video: True
-  #validate_metric: False
 
   shape_model_type: "diffusion-gs-model-scene"
   shape_model:

@@ -43,24 +43,31 @@ class ObjaverseDataModule(pl.LightningDataModule):
     def prepare_data(self):
         pass
 
-    def general_loader(self, dataset, batch_size, collate_fn=None, num_workers=0) -> DataLoader:
-        return DataLoader(
-            dataset, batch_size=batch_size, collate_fn=collate_fn, num_workers=num_workers
-        )
-
     def train_dataloader(self) -> DataLoader:
-        return self.general_loader(
+        return DataLoader(
             self.train_dataset,
             batch_size=self.cfg.batch_size,
             collate_fn=self.train_dataset.collate,
-            num_workers=self.cfg.num_workers
+            num_workers=self.cfg.num_workers,
         )
 
     def val_dataloader(self) -> DataLoader:
-        return self.general_loader(self.val_dataset, batch_size=1)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_workers,
+        )
 
     def test_dataloader(self) -> DataLoader:
-        return self.general_loader(self.test_dataset, batch_size=1)
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_workers,
+        )
 
     def predict_dataloader(self) -> DataLoader:
-        return self.general_loader(self.test_dataset, batch_size=1)
+        return DataLoader(
+            self.test_dataset,
+            batch_size=self.cfg.batch_size,
+            num_workers=self.cfg.num_workers,
+        )

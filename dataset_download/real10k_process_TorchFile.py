@@ -1,5 +1,7 @@
 # Copyright (c) 2025 Haian Jin. Created for the LVSM project (ICLR 2025).
-
+'''
+python real10k_process_TorchFile.py --base_path YOUR_RAW_DATAPATH --output_dir YOUR_PROCESSED_DATAPATH --mode ['train' or 'test']
+'''
 
 import os
 import torch
@@ -106,7 +108,7 @@ def process_torch_file(file_path, output_dir):
                     w2c = np.vstack([w2c, [0, 0, 0, 1]])
                     
                     frame_info = {
-                        'image_path': os.path.join(seq_images_dir, f'{img_idx:05d}.png'),
+                        'image_path': os.path.abspath(os.path.join(seq_images_dir, f'{img_idx:05d}.png')),
                         'fxfycxcy': [fx, fy, cx, cy],
                         'w2c': w2c.tolist()
                     }

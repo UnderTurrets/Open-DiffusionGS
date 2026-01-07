@@ -244,7 +244,6 @@ class DGSDenoiser(BaseModule):
         )
 
         self.transformer.apply(_init_weights)
-
         self.upsampler = GaussiansUpsampler(self.cfg)
         self.upsampler.apply(_init_weights)     
         self.image_token_decoder = ImageTokenDecoder(self.cfg)
@@ -263,22 +262,20 @@ class DGSDenoiser(BaseModule):
                 for k, v in pret_weights.items():
                     if k.startswith('denoiser.') and not k.startswith('denoiser.loss_computer'):
                         _pretrained_ckpt[k.replace('denoiser.', '')] = v
-                        #
                 pretrained_ckpt = _pretrained_ckpt
 
-            # if 'state_dict' in pretrained_ckpt:
-            #     _pretrained_ckpt = {}
-            #     for k, v in pretrained_ckpt['state_dict'].items():
-            #         if k.startswith('shape_model.'):
-            #             _pretrained_ckpt[k.replace('shape_model.', '')] = v
-            #     pretrained_ckpt = _pretrained_ckpt
-            # else:
-            #     _pretrained_ckpt = {}
-            #     for k, v in pretrained_ckpt.items():
-            #         if k.startswith('shape_model.'):
-            #             _pretrained_ckpt[k.replace('shape_model.', '')] = v
-            #     pretrained_ckpt = _pretrained_ckpt
-            # breakpoint()
+            if 'state_dict' in pretrained_ckpt:
+                _pretrained_ckpt = {}
+                for k, v in pretrained_ckpt['state_dict'].items():
+                    if k.startswith('shape_model.'):
+                        _pretrained_ckpt[k.replace('shape_model.', '')] = v
+                pretrained_ckpt = _pretrained_ckpt
+            else:
+                _pretrained_ckpt = {}
+                for k, v in pretrained_ckpt.items():
+                    if k.startswith('shape_model.'):
+                        _pretrained_ckpt[k.replace('shape_model.', '')] = v
+                pretrained_ckpt = _pretrained_ckpt
             self.load_state_dict(pretrained_ckpt, strict=True)
 
     def forward(self, input_batch, timesteps):
@@ -385,7 +382,7 @@ class DGSDenoiser(BaseModule):
                 img_aligned_xyz.mean(dim=2, keepdim=True) + depth_preact_bias
             )
             # stx()
-            #breakpoint()
+            # breakpoint()
             if self.cfg.ray_pe_type == 'relative_plk':
                 img_aligned_xyz = (2.0 * img_aligned_xyz - 1.0) * 1.8 + o_dot_d
                 # print(f"Using augmented plucker coordinates to compute xyz")

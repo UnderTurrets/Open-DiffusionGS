@@ -19,7 +19,7 @@ from diffusionGS.utils.misc import get_rank
 from diffusionGS.systems.base import BaseSystem
 from diffusionGS.models.diffusion import create_diffusion
 from diffusionGS.utils.typing import *
-from diffusionGS.utils.losses import LossComputer
+from diffusionGS.utils.losses import LossComputer, MetricComputer
 from diffusionGS.systems.utils import *
 #from diffusionGS.models.denoiser.denoiser_utils import TransformInput
 import random
@@ -46,6 +46,7 @@ class PointDiffusionSystem(BaseSystem):
         self.diffusion_training = create_diffusion(str(1000), predict_xstart=True)
         self.diffusion_inference = create_diffusion(str(self.cfg.num_inference_steps), predict_xstart=True)
         self.loss_computer = LossComputer()
+        self.metric_computer = MetricComputer()
     
     def get_example_data(self):
         example_data_path = "examp_data/example/debug_objaverse_dataset/data_examples/batch_objaverse_example.json"
@@ -86,7 +87,7 @@ class PointDiffusionSystem(BaseSystem):
         # breakpoint()
         sel_images[:,1:] = self.diffusion_training.q_sample(sel_images[:,1:], timesteps, noise=noise[:,1:])
         gt_img_aligned_xyz = ray_o + ray_d * batch['depths_input']
-        #breakpoint()
+        # breakpoint()
         guassians_parameters, img_aligned_xyz = self.shape_model.image_to_gaussians(sel_images, ray_o, ray_d, timesteps)
         ### 5. render image from gen gaussians
         rendered_images = self.shape_model.render_gaussians(guassians_parameters, batch['c2ws'], batch['fxfycxcys'], sel_images.shape[3],sel_images.shape[4])
@@ -211,7 +212,47 @@ class PointDiffusionSystem(BaseSystem):
             self.save_videos(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xstart.mp4", vis, fps=24, quality=8)
         self.save_guassians_ply(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}.ply", final_out['denoiser_output_dict']['pred_gaussians'][0],render_video=True)
         self.save_torch_images(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}.png", torch.cat([image_condition[0],final_out['denoiser_output_dict']['render_images'][0]], dim=0))
-        return {"val/loss": 123}
+        # 计算并记录指标
+        render_images = final_out['denoiser_output_dict']['render_images']
+        gt_images = batch['rgbs']
+
+        # 对齐视角数量，避免 GT 与渲染视角数不一致导致维度错误
+        n_view = min(render_images.shape[1], gt_images.shape[1])
+        render_images = render_images[:, :n_view]
+        gt_images = gt_images[:, :n_view]
+
+        # 确保LPIPS模块与数据在同一设备
+        self.metric_computer.lpips_loss_module = self.metric_computer.lpips_loss_module.to(render_images.device)
+
+        # 与场景评估保持一致的调用顺序：metric_computer(rendered, gt)
+        psnr, ssim, lpips = self.metric_computer(render_images, gt_images)
+
+        psnr_mean = psnr.mean()
+        ssim_mean = ssim.mean()
+        lpips_mean = lpips.mean()
+
+        # 终端输出
+        print(f"[val][batch {batch_idx}] psnr: {psnr_mean:.4f}, ssim: {ssim_mean:.4f}, lpips: {lpips_mean:.4f}")
+
+        # 记录到logger
+        self.log("val/psnr", psnr_mean, sync_dist=True)
+        self.log("val/ssim", ssim_mean, sync_dist=True)
+        self.log("val/lpips", lpips_mean, sync_dist=True)
+
+        # 保存JSON结果，格式与 eval_scene_result.py 一致
+        result_json = {
+            "psnr": psnr_mean.item(),
+            "ssim": ssim_mean.item(),
+            "lpips": lpips_mean.item(),
+        }
+        uid_tag = batch['uid'][0] if 'uid' in batch else f"batch{batch_idx}"
+        self.save_json(f"it{self.true_global_step}/{uid_tag}_metrics.json", result_json)
+
+        return {
+            "val/psnr": psnr_mean,
+            "val/ssim": ssim_mean,
+            "val/lpips": lpips_mean,
+        }
 
     def on_validation_epoch_end(self):
         pass

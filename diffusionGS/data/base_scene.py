@@ -21,12 +21,10 @@ from torch.utils.data._utils.collate import default_collate_fn_map
 class BaseDataModuleConfig:
     local_dir: str = ''
     local_eval_dir: str = ''
-    view_idx_file_path: str = 'extra_files/evaluation_index_re10k.json'
+    view_idx_file_path: str = ''
     batch_size: int = 32
-    eval_batch_size: int = 1
     eval_subset: int = -1
     num_workers: int = 0
-    num_workers_val: int = 0
     training_res: Optional[List[int]] = field(default_factory=lambda:[256,256])
 
 
@@ -48,27 +46,43 @@ class BaseDataset(Dataset):
             with open(cfg.local_dir, 'r') as f:
                 all_scene_paths = f.read().splitlines()
             all_scene_paths = [path for path in all_scene_paths if path.strip()]
-            self.uids = all_scene_paths#[10:]
+            self.uids = all_scene_paths
         else:
             with open(cfg.local_eval_dir, 'r') as f:
                 all_scene_paths = f.read().splitlines()
             all_scene_paths = [path for path in all_scene_paths if path.strip()]
+            initial_count = len(all_scene_paths)
+
             self.view_idx_list = dict()
-            if self.cfg.view_idx_file_path != '':
-                if os.path.exists(self.cfg.view_idx_file_path):
-                    with open(self.cfg.view_idx_file_path, 'r') as f:
-                        self.view_idx_list = json.load(f)
-                        # filter out None values, i.e. scenes that don't have specified input and targetviews
-                        self.view_idx_list_filtered = [k for k, v in self.view_idx_list.items() if v is not None]
-                    filtered_scene_paths = []
-                    for scene in all_scene_paths:
-                        file_name = scene.split("/")[-1]
-                        scene_name = file_name.split(".")[0]
-                        if scene_name in self.view_idx_list_filtered:
-                            filtered_scene_paths.append(scene)
-                    all_scene_paths = filtered_scene_paths
-                    if self.cfg.eval_subset > 0:
-                        all_scene_paths = all_scene_paths[:self.cfg.eval_subset]
+            filtered_count = None
+            if self.cfg.view_idx_file_path != '' and os.path.exists(self.cfg.view_idx_file_path):
+                with open(self.cfg.view_idx_file_path, 'r') as f:
+                    self.view_idx_list = json.load(f)
+                    # filter out None values, i.e. scenes that don't have specified input and targetviews
+                    self.view_idx_list_filtered = [k for k, v in self.view_idx_list.items() if v is not None]
+                filtered_scene_paths = []
+                for scene in all_scene_paths:
+                    file_name = scene.split("/")[-1]
+                    scene_name = file_name.split(".")[0]
+                    if scene_name in self.view_idx_list_filtered:
+                        filtered_scene_paths.append(scene)
+                filtered_count = len(filtered_scene_paths)
+                all_scene_paths = filtered_scene_paths
+                if self.cfg.eval_subset > 0:
+                    all_scene_paths = all_scene_paths[:self.cfg.eval_subset]
+
+                # 提示用户确认实际评估场景数
+                final_count = len(all_scene_paths)
+                msg_parts = [f"Found {final_count} eval scenes"]
+                if filtered_count is not None:
+                    msg_parts.append(f"(from {initial_count}, kept {filtered_count} with view_idx_file_path, eval_subset={self.cfg.eval_subset})")
+                else:
+                    msg_parts.append(f"(from {initial_count}, no view_idx filtering, eval_subset={self.cfg.eval_subset})")
+                print(" ".join(msg_parts))
+                user_in = input("Proceed with evaluation? [y/N]: ").strip().lower()
+                if user_in not in ("y", "yes"):
+                    raise SystemExit("Evaluation aborted by user confirmation.")
+
             self.uids = all_scene_paths
         # load anything
         print(f"Loaded {len(self.uids)} {split} uids")  

@@ -506,6 +506,9 @@ class SaverMixin:
 
     def save_videos(self, filename, img_seqs,fps=24, quality=8) -> str:
         save_path = self.get_save_path(filename)
+        # imageio prefers uint8; ensure conversion to avoid float->uint8 warnings
+        if np.issubdtype(np.array(img_seqs).dtype, np.floating):
+            img_seqs = (np.array(img_seqs) * 255.0).clip(0.0, 255.0).astype(np.uint8)
         imageio.mimwrite(f"{save_path}", img_seqs, fps=fps, quality=quality)
         return save_path
 

@@ -1,5 +1,5 @@
 exp_root_dir: "outputs"
-name: "diffusion_gs_scene_re10k_256_stage1_eval_test"
+name: "diffusion_gs_scene_re10k_256_stage1_eval"
 tag: "${rmspace:${system.shape_model_type}+lr${system.optimizer.args.lr},_}"
 seed: 0
 # resume: outputs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim-refine-sum-scaleup-from-190k-norm-scale-up-1024-new-vae/michelangelo-autoencoder+n12288+noise0.0+pfeat3+normembFalse+lr0.0002+qkvbiasFalse+nfreq8+ln_postTrue/ckpts/last.ckpt
@@ -7,26 +7,28 @@ seed: 0
 
 data_type: "Re10k-datamodule"
 data:
-  local_dir: "DATAPATH_TO_RE10K_TRAIN_FULLLIST"
-  local_eval_dir: "DATAPATH_TO_RE10K_EVAL_FULLLIST"
-  sel_views: 3
-  eval_subset: 16
+  # 修改为数据集路径
+  local_dir: "/root/autodl-tmp/re10k_subset/train/full_list.txt"
+  local_eval_dir: "/root/autodl-tmp/re10k_subset/test/full_list.txt"
+  # 修改为生成的评估索引文件路径
+  #view_idx_file_path: "/root/autodl-tmp/Open-DiffusionGS/dataset_download/evaluation_index_re10k.json"
+  sel_views: 3  # 输入后的其他视角数
+  eval_subset: -1  # -1 表示使用所有场景，你有80个场景可以全部用
   sel_views_train: 4
   training_res: [256, 256]
   batch_size: 16
-  eval_batch_size: 16
   num_workers: 4
-  num_workers_val: 4
 
 system_type: "diffusion-gs-scene-system"
 system:
   num_inference_steps: 30
-  save_intermediate_video: True
+  save_intermediate_video: True  # 关闭中间视频，节省时间和存储
   save_result_for_eval: True
 
   shape_model_type: "diffusion-gs-model-scene"
   shape_model:
-    pretrained_model_name_or_path: PATH_TO_CKPT
+    # 修改为你的预训练模型路径
+    pretrained_model_name_or_path: "/root/Open-DiffusionGS/pretrained/scene_ckpt_256.ckpt"
     width: 1024
     in_channels: 9 #rgb+plucker
     patch_size: 8

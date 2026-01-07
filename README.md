@@ -1,5 +1,5 @@
 <div align="center">
-<p align="center"> <img src="img/logo.png" width="200px"> </p>
+<p align="center"> <img src="assets/img/logo.png" width="200px"> </p>
 
 [![arXiv](https://img.shields.io/badge/paper-arxiv-179bd3)](https://arxiv.org/abs/2411.14384)
 [![zhihu](https://img.shields.io/badge/知乎-解读-179bd3)](https://zhuanlan.zhihu.com/p/1962623398749372601)
@@ -12,24 +12,24 @@
 
 
 <p align="center">
-  <img src="img/abo.gif" width="24%" alt="abo">
-  <img src="img/gso.gif" width="24%" alt="gso">
-  <img src="img/real_img.gif" width="24%" alt="real_img">
-  <img src="img/wild.gif" width="24%" alt="wild">
+  <img src="assets/img/abo.gif" width="24%" alt="abo">
+  <img src="assets/img/gso.gif" width="24%" alt="gso">
+  <img src="assets/img/real_img.gif" width="24%" alt="real_img">
+  <img src="assets/img/wild.gif" width="24%" alt="wild">
 </p>
 <p align="center">
-  <img src="img/sd_2.gif" width="24%" alt="sd_2">
-  <img src="img/sd_1.gif" width="24%" alt="sd_1">
-  <img src="img/flux_1.gif" width="24%" alt="flux_1">
-  <img src="img/green_man.gif" width="24%" alt="green_man">
+  <img src="assets/img/sd_2.gif" width="24%" alt="sd_2">
+  <img src="assets/img/sd_1.gif" width="24%" alt="sd_1">
+  <img src="assets/img/flux_1.gif" width="24%" alt="flux_1">
+  <img src="assets/img/green_man.gif" width="24%" alt="green_man">
 </p>
 <p align="center">
-  <img src="img/plaza.gif" width="50%" alt="plaza">
-  <img src="img/town.gif" width="48%" alt="town">
+  <img src="assets/img/plaza.gif" width="50%" alt="plaza">
+  <img src="assets/img/town.gif" width="48%" alt="town">
 </p>
 <p align="center">
-  <img src="img/cliff.gif" width="49.5%" alt="cliff">
-  <img src="img/art_gallery.gif" width="48.5%" alt="art_gallery">
+  <img src="assets/img/cliff.gif" width="49.5%" alt="cliff">
+  <img src="assets/img/art_gallery.gif" width="48.5%" alt="art_gallery">
 </p>
 
 
@@ -38,7 +38,7 @@
 This is an implementation of our work "Baking Gaussian Splatting into Diffusion Denoiser for Fast and Scalable Single-stage Image-to-3D Generation and Reconstruction
 ". The code and checkpoints here is a **re-implementation** and **re-training** and **differs** from the original version developed at Adobe. Our DiffusionGS is single-stage and does not rely on 2D multi-view diffusion model. DiffusionGS can be applied to single-view 3D object generation with mesh exportation and scene reconstruction without using depth estimator in ~6 seconds. If you find our repo useful, please give it a star ⭐ and consider citing our paper. Thank you :)
 
-![mesh](img/mesh.png)
+![mesh](assets/img/mesh.png)
 
 
 ### News
@@ -56,14 +56,14 @@ This is an implementation of our work "Baking Gaussian Splatting into Diffusion 
 <details close>
 <summary><b>Quantitative Comparison in the Paper</b></summary>
 
-![results1](img/compare_table.png)
+![results1](assets/img/compare_table.png)
 
 </details>
 
 <details close>
 <summary><b>Qualitative Comparison in the paper</b></summary>
 
-![visual_results](img/compare_figure.png)
+![visual_results](assets/img/compare_figure.png)
 
 </details>
 
@@ -77,9 +77,9 @@ This is an implementation of our work "Baking Gaussian Splatting into Diffusion 
 <table align="center" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
   <tr>
     <td align="center">
-      <img src="img/1.png" width="32%" alt="1">
-      <img src="img/2.jpg" width="32%" alt="2">
-      <img src="img/3.png" width="32%" alt="3">
+      <img src="assets/img/1.png" width="32%" alt="1">
+      <img src="assets/img/2.jpg" width="32%" alt="2">
+      <img src="assets/img/3.png" width="32%" alt="3">
     </td>
   </tr>
   <tr>
@@ -92,9 +92,9 @@ This is an implementation of our work "Baking Gaussian Splatting into Diffusion 
 <table align="center" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
   <tr>
     <td align="center">
-      <img src="img/hunyuan_1.gif" width="32%" alt="hunyuan_1">
-      <img src="img/hunyuan_2.gif" width="32%" alt="hunyuan_2">
-      <img src="img/hunyuan_3.gif" width="32%" alt="hunyuan_3">
+      <img src="assets/img/hunyuan_1.gif" width="32%" alt="hunyuan_1">
+      <img src="assets/img/hunyuan_2.gif" width="32%" alt="hunyuan_2">
+      <img src="assets/img/hunyuan_3.gif" width="32%" alt="hunyuan_3">
     </td>
   </tr>
   <tr>
@@ -107,9 +107,9 @@ This is an implementation of our work "Baking Gaussian Splatting into Diffusion 
 <table align="center" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
   <tr>
     <td align="center">
-      <img src="img/ours_1.gif" width="32%" alt="ours_1">
-      <img src="img/ours_2.gif" width="32%" alt="ours_2">
-      <img src="img/ours_3.gif" width="32%" alt="ours_3">
+      <img src="assets/img/ours_1.gif" width="32%" alt="ours_1">
+      <img src="assets/img/ours_2.gif" width="32%" alt="ours_2">
+      <img src="assets/img/ours_3.gif" width="32%" alt="ours_3">
     </td>
   </tr>
   <tr>
@@ -130,12 +130,13 @@ This is an implementation of our work "Baking Gaussian Splatting into Diffusion 
 ```sh
 conda create -n diffusiongs python=3.11 -y
 conda activate diffusiongs
+# 如果需要安装cuda编译工具包，请取消下面两行注释
 # conda install -c "nvidia/label/cuda-12.1.1" cudatoolkit
 # conda install pytorch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 pytorch-cuda=12.1 -c pytorch -c nvidia
 pip install torch==2.5.1 torchvision==0.20.1
-pip install -r requirements.txt
-pip install -e submodules/diff-gaussian-rasterization
-pip install -e submodules/simple-knn
+pip install -r requirement.txt
+pip install submodules/diff-gaussian-rasterization --no-build-isolation
+pip install submodules/simple-knn --no-build-isolation
 ```
 
 &nbsp;
@@ -153,6 +154,8 @@ This code will automatically download the model checkpoints and config files fro
 ## 3. Data Preparation
 
 ### 3.1 Scene-level Dataset
+
+RealEstate10K的原始数据集下载比较复杂，包含两部分，首先从下载相机轨迹的文本数据(<1G)，然后根据文本中的 URL 下载并解压对应的 YouTube 视频帧。此处的RealEstate10K数据集是由pixelSplat处理后的版本，压缩包500GB。本仓库提供了一个脚本来把pixelSplat版本的RealEstate10K数据集转换为我们使用的格式。
 
 Download the RealEstate10K dataset from [this link](http://schadenfreude.csail.mit.edu:8000/), which is provided by [pixelSplat](https://github.com/dcharatan/pixelsplat), and `unzip` the zip file and put the data in `YOUR_RAW_DATAPATH`.
 Run the following command to preprocess the data into our format.
@@ -190,14 +193,14 @@ Then, specify the `local_dir` to this json file and the `image_dir` to the `gobj
 
 ## 4. Evaluation for Single-view Scene Reconstruction
 
-The scene-level evaluation is conducted on the [RealEstate10K](http://schadenfreude.csail.mit.edu:8000/) dataset prepocessed by [pixelSplat](https://github.com/dcharatan/pixelsplat). The model checkpoints are host on [HuggingFace](https://huggingface.co/CaiYuanhao/DiffusionGS/tree/main). 
+The scene-level evaluation is conducted on the [RealEstate10K](http://schadenfreude.csail.mit.edu:8000/) dataset prepocessed by [pixelSplat](https://github.com/dcharatan/pixelsplat). The model checkpoints are host on [HuggingFace](https://huggingface.co/CaiYuanhao/DiffusionGS/tree/main).
 
 | Model | PSNR  | SSIM  | LPIPS |
 | ----- | ----- | ----- | ----- |
 | [Open-DiffusionGS(res256)](https://huggingface.co/CaiYuanhao/DiffusionGS/blob/main/scene_ckpt_256.ckpt) | 21.26 | 0.672 | 0.257 |
 | [Open-DiffusionGS(res512)](https://huggingface.co/CaiYuanhao/DiffusionGS/blob/main/scene_ckpt_512.ckpt) | - | - | - |
 
-We use `./extra_files/evaluation_index_re10k.json` to specify the input and target view indice. This json file is originally from [pixelSplat](https://github.com/dcharatan/pixelsplat). 
+We use `evaluation_index_re10k.json` to specify the input and target view indice. This json file is originally from [pixelSplat](https://github.com/dcharatan/pixelsplat).
 
 We only provide evaluation codes for scene as
 ```bash

@@ -31,7 +31,7 @@ class Renderer(nn.Module):
             f"in Renderer, gaussians_model.scaling_modifier: {self.gaussians_model.scaling_modifier}"
         )
 
-    @torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
+    @torch.amp.custom_fwd(cast_inputs=torch.float32, device_type='cuda')
     def forward(
         self,
         xyz,
@@ -105,7 +105,7 @@ class SceneRenderer(nn.Module):
         print(f"in Renderer, scaling_modifier: {self.scaling_modifier}")
         print(f"in Renderer, gaussians_model.scaling_modifier: {self.gaussians_model.scaling_modifier}")
 
-    @torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
+    @torch.amp.custom_fwd(cast_inputs=torch.float32, device_type='cuda')
     def forward(
         self,
         xyz,

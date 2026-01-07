@@ -4,11 +4,8 @@ import contextlib
 import importlib
 import logging
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 import sys
 import time
-import re
-import datetime
 import traceback
 import pytorch_lightning as pl
 import torch
