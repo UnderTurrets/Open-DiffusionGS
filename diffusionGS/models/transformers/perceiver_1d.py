@@ -1,13 +1,7 @@
-import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from diffusionGS.utils.typing import *
-from diffusionGS.utils.checkpoint import checkpoint
-
-from .utils import init_linear
-from .attention import  ResidualAttentionBlock
+from .attention import ResidualAttentionBlock
 
 
 class Perceiver(nn.Module):

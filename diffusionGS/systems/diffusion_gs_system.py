@@ -1,34 +1,25 @@
 from dataclasses import dataclass, field
 
-import numpy as np
-import json
-import copy
-import torch
-import torch.nn.functional as F
-from skimage import measure
-from einops import repeat
-from tqdm import tqdm
-from PIL import Image
-import os
-import cv2
+from easydict import EasyDict as edict
+from einops import rearrange
 
 import diffusionGS
-from easydict import EasyDict as edict
-from einops import repeat, rearrange
-from diffusionGS.utils.misc import get_rank
-from diffusionGS.systems.base import BaseSystem
 from diffusionGS.models.diffusion import create_diffusion
-from diffusionGS.utils.typing import *
-from diffusionGS.utils.losses import LossComputer, MetricComputer
+from diffusionGS.systems.base import BaseSystem
 from diffusionGS.systems.utils import *
+from diffusionGS.utils.losses import LossComputer, MetricComputer
+
+
 #from diffusionGS.models.denoiser.denoiser_utils import TransformInput
-import random
 # DEBUG = True
 @diffusionGS.register("diffusion-gs-system")
 class PointDiffusionSystem(BaseSystem):
     @dataclass
     class Config(BaseSystem.Config):
         num_inference_steps: int = 50
+        save_intermediate_video: bool = False
+        save_gaussians: bool = False
+        save_image: bool = False
         # shape vae model
         shape_model_type: str = None
         shape_model: dict = field(default_factory=dict)
@@ -70,17 +61,17 @@ class PointDiffusionSystem(BaseSystem):
         return sel_images, sel_c2ws, sel_fxfycxcys
 
     def forward(self, batch: Dict[str, Any], skip_noise=False) -> Dict[str, Any]:
-        #get training input
-        sel_images = batch['rgbs_input'] #(batch['rgbs_input']*2.) - 1. ##归一化
+        # get training input
+        sel_images = batch['rgbs_input']
         ray_o, ray_d = TransformInput(sel_images, batch['c2ws_input'], batch['fxfycxcys_input'])
-        bs, v, c, h, w = sel_images.shape
-        # 3. sample noise that we"ll add to the latents
-        noise = torch.randn_like(sel_images)#.to(sel_images)
-        # 4. Sample a random timestep for each motion
+        b, v, c, h, w = sel_images.shape
+        # sample noise that we'll add to the latents
+        noise = torch.randn_like(sel_images)
+        # Sample a random timestep for each motion
         timesteps = torch.randint(
             0,
             self.cfg.noise_scheduler.num_train_timesteps,
-            (bs,),
+            (b,),
             device=sel_images.device,
         )
         timesteps = timesteps.long()
@@ -89,8 +80,8 @@ class PointDiffusionSystem(BaseSystem):
         gt_img_aligned_xyz = ray_o + ray_d * batch['depths_input']
         # breakpoint()
         guassians_parameters, img_aligned_xyz = self.shape_model.image_to_gaussians(sel_images, ray_o, ray_d, timesteps)
-        ### 5. render image from gen gaussians
-        rendered_images = self.shape_model.render_gaussians(guassians_parameters, batch['c2ws'], batch['fxfycxcys'], sel_images.shape[3],sel_images.shape[4])
+        # render image from gen gaussians
+        rendered_images = self.shape_model.render_gaussians(guassians_parameters, batch['c2ws'], batch['fxfycxcys'], h, w)
         #rendered_images,rendered_depths = rendered_images[:,:,:3],rendered_images[:,:,3:]
         l2_loss, lpips_loss, ssim_loss, pointsdist_loss, l2_loss_xyz = self.loss_computer(
                                                                         rendered_images,
@@ -135,7 +126,7 @@ class PointDiffusionSystem(BaseSystem):
         # TODO: write a save and denoise process
         # out = self(batch)      
             # if get_rank() == 0:
-            ######################## for debug ########################
+        ######################## for debug ########################
         # input_batch_test = self.get_example_data()
         # ray_o, ray_d = TransformInput(input_batch_test['image'], input_batch_test['c2w'], input_batch_test['fxfycxcy'])
         # input_batch = edict(
@@ -147,7 +138,8 @@ class PointDiffusionSystem(BaseSystem):
         #     )
         # input_images = input_batch_test['image'] #batch['rgbs_input']
         # image_condition = input_batch_test['image'][0,:1]
-            ######################## for debug ########################
+        ######################## for debug ########################
+
         ######################## for real run ########################     
         ray_o, ray_d = TransformInput(batch['rgbs_input'], batch['c2ws_input'], batch['fxfycxcys_input'])
         input_batch = edict(
@@ -198,47 +190,67 @@ class PointDiffusionSystem(BaseSystem):
             traj_pred_xstart, "t n v c h w -> n t h (v w) c"
         ).contiguous().cpu().numpy()
 
-        # save multiple videos
-        for i in range(traj_samples.shape[0]):
-            vis = traj_samples[i]
-            vis = display_timestep_on_video(vis, traj_timesteps)
-            self.save_videos(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xt.mp4", vis, fps=24, quality=8)
+        if self.cfg.save_intermediate_video:
+            # save multiple videos
+            for i in range(traj_samples.shape[0]):
+                vis = traj_samples[i]
+                vis = display_timestep_on_video(vis, traj_timesteps)
+                self.save_videos(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xt.mp4", vis, fps=24, quality=8)
+            for i in range(traj_pred_xstart.shape[0]):
+                vis = traj_pred_xstart[i]
+                vis = display_timestep_on_video(vis, traj_timesteps)
+                self.save_videos(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xstart.mp4", vis, fps=24, quality=8)
+        # 保存整个 batch 的 PLY 与每个视角 PNG
+        if self.cfg.save_gaussians:
+            pred_gaussians = final_out['denoiser_output_dict']['pred_gaussians']
+            num_items = len(pred_gaussians)
+            for i in range(num_items):
+                uid_i = batch['uid'][i] if 'uid' in batch else f"batch{batch_idx}_i{i}"
+                sel_idx_tag = batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0
+                self.save_guassians_ply(
+                    f"it{self.true_global_step}/{uid_i}_{sel_idx_tag}.ply",
+                    pred_gaussians[i],
+                    render_video=True,
+                )
 
-        # 将输出的图片保存为视频
-        image_grid = []
-        for i in range(traj_pred_xstart.shape[0]):
-            vis = traj_pred_xstart[i]
-            vis = display_timestep_on_video(vis, traj_timesteps)
-            self.save_videos(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xstart.mp4", vis, fps=24, quality=8)
-        self.save_guassians_ply(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}.ply", final_out['denoiser_output_dict']['pred_gaussians'][0],render_video=True)
-        self.save_torch_images(f"it{self.true_global_step}/{batch['uid'][0]}_{batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0}.png", torch.cat([image_condition[0],final_out['denoiser_output_dict']['render_images'][0]], dim=0))
-        # 计算并记录指标
+        if self.cfg.save_image:
+            rendered = final_out['denoiser_output_dict']['render_images']  # [B, V, C, H, W]
+            B, V = rendered.shape[0], rendered.shape[1]
+            for i in range(B):
+                uid_i = batch['uid'][i] if 'uid' in batch else f"batch{batch_idx}_i{i}"
+                sel_idx_tag = batch['sel_idx'][0] if 'sel_idx' in batch.keys() else 0
+                # 仍然保存一张汇总图（包含条件图 + 全部渲染视角）
+                self.save_torch_images(
+                    f"it{self.true_global_step}/{uid_i}_{sel_idx_tag}_grid.png",
+                    torch.cat([image_condition[i], rendered[i]], dim=0),
+                )
+                # 逐视角单独保存
+                for v in range(V):
+                    self.save_torch_images(
+                        f"it{self.true_global_step}/{uid_i}_{sel_idx_tag}_view{v:02d}.png",
+                        rendered[i, v],
+                    )
+
+        ################################################### 计算并记录指标 #############################################
         render_images = final_out['denoiser_output_dict']['render_images']
         gt_images = batch['rgbs']
-
         # 对齐视角数量，避免 GT 与渲染视角数不一致导致维度错误
         n_view = min(render_images.shape[1], gt_images.shape[1])
         render_images = render_images[:, :n_view]
         gt_images = gt_images[:, :n_view]
-
         # 确保LPIPS模块与数据在同一设备
         self.metric_computer.lpips_loss_module = self.metric_computer.lpips_loss_module.to(render_images.device)
-
         # 与场景评估保持一致的调用顺序：metric_computer(rendered, gt)
         psnr, ssim, lpips = self.metric_computer(render_images, gt_images)
-
         psnr_mean = psnr.mean()
         ssim_mean = ssim.mean()
         lpips_mean = lpips.mean()
-
         # 终端输出
         print(f"[val][batch {batch_idx}] psnr: {psnr_mean:.4f}, ssim: {ssim_mean:.4f}, lpips: {lpips_mean:.4f}")
-
         # 记录到logger
         self.log("val/psnr", psnr_mean, sync_dist=True)
         self.log("val/ssim", ssim_mean, sync_dist=True)
         self.log("val/lpips", lpips_mean, sync_dist=True)
-
         # 保存JSON结果，格式与 eval_scene_result.py 一致
         result_json = {
             "psnr": psnr_mean.item(),
@@ -247,6 +259,7 @@ class PointDiffusionSystem(BaseSystem):
         }
         uid_tag = batch['uid'][0] if 'uid' in batch else f"batch{batch_idx}"
         self.save_json(f"it{self.true_global_step}/{uid_tag}_metrics.json", result_json)
+        ################################################### 计算并记录指标 #############################################
 
         return {
             "val/psnr": psnr_mean,

@@ -1,5 +1,5 @@
 exp_root_dir: "outputs"
-name: "diffusion_gs_scene_re10k_512_stage2_eval"
+name: "diffusion_gs_scene_re10k_512_eval"
 tag: "${rmspace:${system.shape_model_type}+lr${system.optimizer.args.lr},_}"
 seed: 0
 # resume: outputs/image-to-shape-diffusion/clip-dino-rgb-pixart-lr2e4-ddim-refine-sum-scaleup-from-190k-norm-scale-up-1024-new-vae/michelangelo-autoencoder+n12288+noise0.0+pfeat3+normembFalse+lr0.0002+qkvbiasFalse+nfreq8+ln_postTrue/ckpts/last.ckpt
@@ -7,33 +7,37 @@ seed: 0
 
 data_type: "Re10k-datamodule"
 data:
-  local_dir: "DATAPATH_TO_RE10K_TRAIN_FULLLIST"
-  local_eval_dir: "DATAPATH_TO_RE10K_EVAL_FULLLIST"
-  sel_views: 3
-  eval_subset: 16
+  # 修改为数据集路径
+  local_dir: "/root/autodl-tmp/re10k_subset/train/full_list.txt"
+  local_eval_dir: "/root/autodl-tmp/re10k_subset/test/full_list.txt"
+  # 修改为生成的评估索引文件路径
+#  view_idx_file_path: "/root/Open-DiffusionGS/dataset_download/evaluation_index_re10k.json"
+  sel_views: 3  # 输入后的其他视角数
+  eval_subset: -1  # -1 表示使用所有场景
   sel_views_train: 4
   training_res: [512, 512]
-  batch_size: 32
+  batch_size: 8
   num_workers: 4
 
 system_type: "diffusion-gs-scene-system"
 system:
   num_inference_steps: 30
   save_intermediate_video: True
-  save_result_for_eval: False
+  save_gaussians: False
+  save_image: True
+  save_result_for_eval: True
 
 
   shape_model_type: "diffusion-gs-model-scene"
   shape_model:
-    pretrained_model_name_or_path: PATH_TO_CKPT
+    # 修改为你的预训练模型路径
+    pretrained_model_name_or_path: "/root/Open-DiffusionGS/pretrained/scene_ckpt_512.ckpt"
     width: 1024
     in_channels: 9 #rgb+plucker
     patch_size: 8
     n_gaussians: 2
     dim_heads: 64
     num_layers: 24
-    # gs_per_pixel_sqrt: 1
-    #range_setting_type: "linear_depth"
     range_setting_near: 0 
     range_setting_far: 500 
     prior_distribution: 'gaussian' #sphere_gaussian
@@ -80,7 +84,6 @@ trainer:
   max_epochs: 1000000
   log_every_n_steps: 1
   num_sanity_val_steps: 1
-  #val_check_interval: 5000
   check_val_every_n_epoch: 1
   accumulate_grad_batches: 1
   gradient_clip_val: 0.5

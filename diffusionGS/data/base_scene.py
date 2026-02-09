@@ -1,20 +1,16 @@
-import math
-import os
 import json
-import re
-import cv2
+import os
+import random
 from dataclasses import dataclass, field
 
-import random
-import imageio
+# from PIL import Image
+import PIL
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
-# from PIL import Image
-import PIL
+from torch.utils.data import Dataset
+
 from diffusionGS.utils.typing import *
-from torch.utils.data._utils.collate import default_collate_fn_map
 
 
 @dataclass
@@ -27,7 +23,6 @@ class BaseDataModuleConfig:
     num_workers: int = 0
     training_res: Optional[List[int]] = field(default_factory=lambda:[256,256])
 
-
     patch_size: int = 8
     sel_views_train: int = 4
     sel_views: int = 4 # first view is the input image
@@ -35,6 +30,7 @@ class BaseDataModuleConfig:
     ################################# Image part #################################
     square_crop: bool = True
     load_image: bool = True
+
 
 
 class BaseDataset(Dataset):
@@ -168,7 +164,6 @@ class BaseDataset(Dataset):
         in_c2ws[:, :3, 3] /= scene_scale
 
         return in_c2ws
-
 
     def _get_data(self, index):
         uid = self.uids[index]

@@ -6,8 +6,8 @@ import pytorch_lightning
 
 from diffusionGS.utils.config import dump_config
 from diffusionGS.utils.misc import parse_version
+
 #from diffusionGS.utils.ema import ExponentialMovingAverage
-import logging
 
 if parse_version(pytorch_lightning.__version__) > parse_version("1.8"):
     from pytorch_lightning.callbacks import Callback
@@ -16,10 +16,6 @@ else:
 
 from pytorch_lightning.callbacks.progress import TQDMProgressBar
 from pytorch_lightning.utilities.rank_zero import rank_zero_only, rank_zero_warn
-
-
-from timm.utils.model import get_state_dict, unwrap_model
-from timm.utils.model_ema import ModelEmaV2
 
 
 class EarlyEnvironmentSetter(Callback):

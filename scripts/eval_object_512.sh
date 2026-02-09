@@ -4,4 +4,4 @@ source activate diffusiongs
 
 TORCHELASTIC_TIMEOUT=18000 torchrun --standalone --nnodes=1 --nproc-per-node=1 \
     launch.py --validate --use_ema --gpu 0 \
-    --config diffusionGS/configs/diffusionGS_rel_512_eval.yaml
+    --config diffusionGS/configs/diffusionGS_rel_eval_512.yaml

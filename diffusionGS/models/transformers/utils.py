@@ -2,7 +2,6 @@ import torch.nn as nn
 import torch
 
 from timm.models.vision_transformer import Mlp, DropPath
-#from utils import timestep_embedding
 
 import math
 # --------------------------------------------------------

@@ -1,20 +1,20 @@
+import inspect
+import math
+
+import cv2
 import numpy as np
+import rembg
 import torch
 import torch.nn as nn
-import json
-from diffusers import DDIMScheduler
-
-from diffusionGS.utils.typing import *
-from tqdm import tqdm
-import math
 import torch.nn.functional as F
-from PIL import Image
-from torchvision import transforms
-from diffusionGS.utils.structure import Mesh
-import inspect
 from PIL import Image, ImageOps
-import rembg
-import cv2
+from torchvision import transforms
+from tqdm import tqdm
+
+from diffusionGS.utils.structure import Mesh
+from diffusionGS.utils.typing import *
+
+
 def _warmup_beta(beta_start, beta_end, num_diffusion_timesteps, warmup_frac):
     betas = beta_end * np.ones(num_diffusion_timesteps, dtype=np.float64)
     warmup_time = int(num_diffusion_timesteps * warmup_frac)
@@ -285,7 +285,7 @@ def euler_sample(ddim_scheduler,
         "generator": generator
     }
     
-    #timesteps, num_inference_steps = retrieve_timesteps(ddim_scheduler, steps, device)
+    # timesteps, num_inference_steps = retrieve_timesteps(ddim_scheduler, steps, device)
     # breakpoint()
     # reverse
     for i, t in enumerate(tqdm(timesteps, disable=disable_prog, desc="Euler Sampling:", leave=False)):
@@ -674,7 +674,7 @@ def TransformInput(image, c2w, fxfycxcy, patch_size=None):
     # ray_d 是相机坐标系下的射线方向
     ray_d = torch.stack([x, y, z], dim=2)  # [b*v, h*w, 3]
     ray_d_cam = ray_d.clone()
-    # bmm = batch matrix multiplication, 这里转成世界坐标系
+    # batch matrix multiplication, 这里转成世界坐标系
     ray_d = torch.bmm(ray_d.to(c2w), c2w[:, :3, :3].transpose(1, 2))  # [b*v, h*w, 3]
 
     # norm

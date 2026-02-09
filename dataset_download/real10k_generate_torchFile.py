@@ -22,7 +22,7 @@ INPUT_METADATA_DIR = Path("/data/scene-rep/Real-Estate-10k/metadata")  # 元数�
 OUTPUT_DIR = Path("/data/scene-rep/Real-Estate-10k/re10k_pt")           # 输出 .torch 目录
 TARGET_BYTES_PER_CHUNK = int(1e8)  # 每个 chunk 目标大小，默认 ~100MB
 
-python dataset_download/real10k_generate_torchFile.py
+python real10k_generate_torchFile.py
 '''
 import subprocess
 import sys

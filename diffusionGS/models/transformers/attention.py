@@ -1,13 +1,13 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from diffusionGS.utils.typing import *
 from diffusionGS.utils.checkpoint import checkpoint
-
+from diffusionGS.utils.typing import *
 from .utils import init_linear, MLP
-from timm.models.vision_transformer import Attention
+
 
 def scaled_dot_product_gqa(
     query: Tensor,

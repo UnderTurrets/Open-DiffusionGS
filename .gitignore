@@ -4,4 +4,8 @@ pretrained/
 *.pt
 *.ckpt
 *.so
-.github
+.github/
+*.DS_Store
+*.code-workspace
+build/
+*.egg-info/

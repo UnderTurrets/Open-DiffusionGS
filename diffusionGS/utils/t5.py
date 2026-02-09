@@ -1,7 +1,5 @@
-import re
-import os
-import re
 import html
+import re
 import urllib.parse as ul
 
 from bs4 import BeautifulSoup

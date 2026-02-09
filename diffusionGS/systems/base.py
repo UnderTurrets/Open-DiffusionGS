@@ -1,19 +1,16 @@
-import os
 from dataclasses import dataclass, field
 
 import pytorch_lightning as pl
-import torch.nn.functional as F
 
-import diffusionGS
 from diffusionGS.utils.base import (
     Updateable,
     update_end_if_possible,
     update_if_possible,
 )
-from diffusionGS.utils.scheduler import parse_optimizer, parse_scheduler
 from diffusionGS.utils.config import parse_structured
-from diffusionGS.utils.misc import C, cleanup, get_device, load_module_weights
+from diffusionGS.utils.misc import C, cleanup, load_module_weights
 from diffusionGS.utils.saving import SaverMixin
+from diffusionGS.utils.scheduler import parse_optimizer, parse_scheduler
 from diffusionGS.utils.typing import *
 
 

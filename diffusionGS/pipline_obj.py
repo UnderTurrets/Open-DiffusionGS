@@ -1,19 +1,19 @@
 import os
-import warnings
-from typing import Callable, List, Optional, Union, Dict, Any
+from typing import List
+
 import PIL.Image
-import trimesh
-import rembg
-import torch
 import numpy as np
-from huggingface_hub import hf_hub_download
+import torch
+import trimesh
 from diffusers.utils import BaseOutput
-import torch.nn.functional as F
-import diffusionGS
-from diffusionGS.utils.config import ExperimentConfig, load_config
-from diffusionGS.systems.utils import *
 from easydict import EasyDict as edict
-from collections import OrderedDict
+from huggingface_hub import hf_hub_download
+
+import diffusionGS
+from diffusionGS.systems.utils import *
+from diffusionGS.utils.config import ExperimentConfig, load_config
+
+
 class GSPipelineOutput(BaseOutput):
     """
     Output class for image pipelines.

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-import numpy as np
 import torch
 
 def compute_density_for_timestep_sampling(

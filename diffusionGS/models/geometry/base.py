@@ -1,11 +1,11 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 import diffusionGS
+from diffusionGS.utils.base import BaseModule
+from diffusionGS.utils.ops import chunk_batch, scale_tensor
+from diffusionGS.utils.typing import *
 from .utils import (
     Mesh,
     IsosurfaceHelper,
@@ -13,9 +13,6 @@ from .utils import (
     MarchingTetrahedraHelper,
 )
 
-from diffusionGS.utils.base import BaseModule
-from diffusionGS.utils.ops import chunk_batch, scale_tensor
-from diffusionGS.utils.typing import *
 
 class BaseGeometry(BaseModule):
     @dataclass

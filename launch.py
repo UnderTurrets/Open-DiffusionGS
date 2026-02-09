@@ -187,7 +187,7 @@ def main(args, extras) -> None:
     system: BaseSystem = diffusionGS.find(cfg.system_type)(
         cfg.system, resumed=cfg.resume is not None
     )
-    system.set_save_dir(os.path.join(cfg.trial_dir, "save"))
+    system.set_save_dir(cfg.trial_dir)
 
     if args.gradio:
         fh = logging.FileHandler(os.path.join(cfg.trial_dir, "logs"))

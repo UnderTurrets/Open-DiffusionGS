@@ -2,16 +2,16 @@
 """
 为子集数据生成 evaluation_index_re10k.json
 为每个场景随机选择固定的输入视角和目标视角
-python dataset_download/real10k_generate_eval_index.py \
+python real10k_generate_eval_index.py \
     --metadata_dir /root/autodl-tmp/re10k_subset_diffusionGS/test/metadata \
     --output_file dataset_download/evaluation_index_subset.json
 """
 
-import json
-import os
-import random
 import argparse
+import json
+import random
 from pathlib import Path
+
 
 def generate_evaluation_index(metadata_dir, output_file, num_context=1, num_target=3, seed=42):
     """

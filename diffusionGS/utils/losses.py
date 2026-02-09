@@ -1,16 +1,16 @@
 # Adapted from https://github.com/zhengqili/Crowdsampling-the-Plenoptic-Function/blob/f5216f312cf82d77f8d20454b5eeb3930324630a/models/networks.py#L1478
 import os
 
+import lpips
 import scipy.io
 import torch
 import torch.nn as nn
-
-import torch.nn as nn
-from pytorch_msssim import SSIM
-import lpips
 import torch.nn.functional as F
+from einops import reduce
+from pytorch_msssim import SSIM
 from skimage.metrics import structural_similarity
-from einops import reduce, rearrange
+
+
 class VGG19(nn.Module):
     def __init__(self):
         super(VGG19, self).__init__()

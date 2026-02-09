@@ -1,175 +1,19 @@
-from dataclasses import dataclass
-import math
 import copy
+from dataclasses import dataclass
+
 import torch
 import torch.nn as nn
-from einops import repeat, rearrange
-from einops.layers.torch import Rearrange
 from easydict import EasyDict as edict
+from einops import rearrange
+from einops.layers.torch import Rearrange
+
 import diffusionGS
-from diffusionGS.models.transformers.utils_transformer import DiTBlock,_init_weights
-from diffusionGS.models.gsrenderer.renderer import Renderer,SceneRenderer
-from diffusionGS.utils.checkpoint import checkpoint
+from diffusionGS.models.gsrenderer.renderer import Renderer
+from diffusionGS.models.transformers.utils_transformer import DiTBlock, _init_weights
 from diffusionGS.utils.base import BaseModule
-from diffusionGS.utils.typing import *
-from diffusionGS.utils.ops import generate_dense_grid_points
-from tqdm import tqdm
-from torchvision.utils import save_image
+from diffusionGS.models.denoiser.denoiser_utils import TimestepEmbedder, GaussiansUpsampler, ImageTokenDecoder
 
-import numpy as np
-# import cupy as np
-
-def modulate(x, shift, scale):
-    return x * (1 + scale.unsqueeze(1)) + shift.unsqueeze(1)
-#################################################################################
-#               Embedding Layers for Timesteps and Class Labels                 #
-#################################################################################
-class TimestepEmbedder(nn.Module):
-    """
-    Embeds scalar timesteps into vector representations.
-    """
-
-    def __init__(self, hidden_size, frequency_embedding_size=256):
-        super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(frequency_embedding_size, hidden_size, bias=True),
-            nn.SiLU(),
-            nn.Linear(hidden_size, hidden_size, bias=True),
-        )
-        self.frequency_embedding_size = frequency_embedding_size
-
-    '''
-        staticmethod 装饰器可以声明静态方法
-        无需实例化 TimestepEmbedder 类, 就可以直接调用 timestep_embedding 方法
-    '''
-    @staticmethod
-    def timestep_embedding(t, dim, max_period=10000):
-        """
-        Create sinusoidal timestep embeddings.
-        :param t: a 1-D Tensor of N indices, one per batch element.
-                          These may be fractional.
-        :param dim: the dimension of the output.
-        :param max_period: controls the minimum frequency of the embeddings.
-        :return: an (N, D) Tensor of positional embeddings.
-        """
-        # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
-        half = dim // 2
-        freqs = torch.exp(
-            -math.log(max_period)
-            * torch.arange(start=0, end=half, dtype=torch.float32)
-            / half
-        ).to(device=t.device)
-        args = t[:, None].float() * freqs[None]
-        embedding = torch.cat([torch.cos(args), torch.sin(args)], dim=-1)
-        if dim % 2:
-            embedding = torch.cat(
-                [embedding, torch.zeros_like(embedding[:, :1])], dim=-1
-            )
-        return embedding
-
-    def forward(self, t):
-        t_freq = self.timestep_embedding(t, self.frequency_embedding_size)
-        t_emb = self.mlp(t_freq)
-        return t_emb
-    
-
-
-class GaussiansUpsampler(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-
-        """
-        xyz : torch.tensor of shape (n_gaussians, 3)
-        features : torch.tensor of shape (n_gaussians, (sh_degree + 1) ** 2, 3)
-        scaling : torch.tensor of shape (n_gaussians, 3)
-        rotation : torch.tensor of shape (n_gaussians, 4)
-        opacity : torch.tensor of shape (n_gaussians, 1)
-        """
-        self.layernorm = nn.LayerNorm(config.width, bias=False) # d - dimension - channel
-
-        u = 1 #config.model.gaussians.upsampler.upsample_factor
-        if u > 1:
-            raise NotImplementedError("GaussiansUpsampler only supports u=1")
-        else:
-            self.linear = nn.Linear(
-                config.width,
-                3 + (config.gaussians_sh_degree + 1) ** 2 * 3 + 3 + 4 + 1,        # 直接转成 per-pixel Gaussian map
-                bias=False,
-            )
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(config.width, 2 * config.width, bias=True)
-        )
-
-    def to_gs(self, gaussians):     # 把 dimenssion 分掉，分出对应的维度
-        """
-        gaussians: [b, n_gaussians, d]
-        n_gaussians - 高斯的数量
-        d - 每个高斯的 attribute 的数量
-        """
-        xyz, features, scaling, rotation, opacity = gaussians.split(
-            [3, (self.config.gaussians_sh_degree + 1) ** 2 * 3, 3, 4, 1], dim=2
-        )
-        features = features.reshape(
-            features.size(0),
-            features.size(1),
-            (self.config.gaussians_sh_degree + 1) ** 2,
-            3,
-        )
-        # breakpoint()
-        # torch.exp(torch.tensor(-2.3)) = 0.1
-        # torch.exp(torch.tensor(-1.2)) = 0.3
-        scaling = (scaling - 2.3).clamp(max=-1.20)
-        # torch.sigmoid(-torch.tensor(2.)) = 0.1192
-        opacity = opacity - 2.0
-        return xyz, features, scaling, rotation, opacity
-
-    def forward(self, gaussians, t_embedding):
-        """
-        gaussians: [b, n_gaussians, d]
-        t_embedding: [b, d]
-        output: [b, n_gaussians, dd]
-        """
-        u = 1 #self.config.model.gaussians.upsampler.upsample_factor
-        if u > 1:
-            raise NotImplementedError("GaussiansUpsampler only supports u=1")
-        
-        shift, scale = self.adaLN_modulation(t_embedding).chunk(2, dim=1)
-        gaussians = modulate(self.layernorm(gaussians), shift, scale)
-        gaussians = self.linear(gaussians)
-
-        return gaussians
-
-
-class ImageTokenDecoder(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-
-        self.layernorm = nn.LayerNorm(config.width, bias=False)
-        self.linear = nn.Linear(
-                config.width,
-                (config.patch_size**2)
-                * (3 + (config.gaussians_sh_degree + 1) ** 2 * 3 + 3 + 4 + 1),
-                bias=False,
-            )
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(config.width, 2 * config.width, bias=True)
-        )
-
-    def forward(self, img_tokens, t_embedding):
-        """
-        img_tokens: [b, n_patches, d]
-        t_embedding: [b, d]
-        output: [b, n_patches, dd]
-        """
-        shift, scale = self.adaLN_modulation(t_embedding).chunk(2, dim=1)
-        img_tokens = modulate(self.layernorm(img_tokens), shift, scale)
-        img_tokens = self.linear(img_tokens)
-        return img_tokens
-
-
-###################### AutoEncoder
+# Encoder
 @diffusionGS.register("diffusion-gs-model-scene")
 class DGSDenoiser(BaseModule):
     r"""
@@ -388,8 +232,8 @@ class DGSDenoiser(BaseModule):
 
         all_gaussians = torch.cat((gaussians, img_aligned_gaussians), dim=1)
         xyz, features, scaling, rotation, opacity = self.upsampler.to_gs(all_gaussians)
-        ###gs post process
-                # 选择最后 n_img_aligned_gaussians 个元素
+        # gs post process
+        # 选择最后 n_img_aligned_gaussians 个元素
         # n_img_aligned_gaussians = v * n_patches * patchsize * patchsize
         img_aligned_xyz = xyz[:, -n_img_aligned_gaussians:, :]  # 把 image 对应的 Gaussians 模型 xyz 取出来
         img_aligned_xyz = rearrange(
@@ -403,7 +247,7 @@ class DGSDenoiser(BaseModule):
         )
 
         # 对 image_aligned_xyz 进行矫正
-        if self.cfg.hard_pixelalign:   #这是 true, 要执行的
+        if self.cfg.hard_pixelalign:
             img_aligned_xyz = img_aligned_xyz.mean(dim=2, keepdim=True)
             img_aligned_xyz = self.range_func(img_aligned_xyz)
 

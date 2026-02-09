@@ -1,27 +1,15 @@
 from dataclasses import dataclass, field
 
-import numpy as np
-import json
-import copy
-import torch
-import torch.nn.functional as F
-from skimage import measure
-from einops import repeat
-from tqdm import tqdm
-from PIL import Image
-import os
-import cv2
+from easydict import EasyDict as edict
+from einops import rearrange
 
 import diffusionGS
-from easydict import EasyDict as edict
-from einops import repeat, rearrange
-from diffusionGS.utils.misc import get_rank
-from diffusionGS.systems.base import BaseSystem
 from diffusionGS.models.diffusion import create_diffusion
-from diffusionGS.utils.typing import *
-from diffusionGS.utils.losses import LossComputer,MetricComputer
+from diffusionGS.systems.base import BaseSystem
 from diffusionGS.systems.utils import *
-import random
+from diffusionGS.utils.losses import LossComputer
+
+
 # DEBUG = True
 @diffusionGS.register("diffusion-gs-scene-system")
 class PointDiffusionSystem(BaseSystem):
@@ -29,7 +17,9 @@ class PointDiffusionSystem(BaseSystem):
     class Config(BaseSystem.Config):
         num_inference_steps: int = 30
         snr: bool = True
-        save_intermediate_video: bool = True
+        save_intermediate_video: bool = False
+        save_gaussians: bool = False
+        save_image: bool = False
         save_result_for_eval: bool = False
         # shape vae model
         shape_model_type: str = None
@@ -200,19 +190,25 @@ class PointDiffusionSystem(BaseSystem):
             for i in range(traj_samples.shape[0]):
                 vis = traj_samples[i]
                 vis = display_timestep_on_video(vis, traj_timesteps)
-                self.save_videos(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xt.mp4", vis, fps=24, quality=8)
-            # 将输出的图片保存为视频
-            image_grid = []
+                self.save_videos(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xt.mp4",
+                                 vis, fps=24, quality=8)
+
             for i in range(traj_pred_xstart.shape[0]):
                 vis = traj_pred_xstart[i]
                 vis = display_timestep_on_video(vis, traj_timesteps)
-                self.save_videos(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xstart.mp4", vis, fps=24, quality=8)
+                self.save_videos(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}_{i:04d}_traj_xstart.mp4",
+                                 vis, fps=24, quality=8)
+
             # breakpoint()
+        if self.cfg.save_gaussians:
             for i in range(traj_pred_xstart.shape[0]):
                 self.save_guassians_ply_scene(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}.ply", \
                                             final_out['denoiser_output_dict']['pred_gaussians'][i], render_keyframe_c2ws = batch['c2ws_input'][i], \
                                             render_intrinsics = batch['fxfycxcys_input'][i], render_video=True, h=batch['rgbs_input'].shape[-2], w=batch['rgbs_input'].shape[-1])
-                self.save_torch_images(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}.png", torch.cat([image_condition[i],final_out['denoiser_output_dict']['render_images'][i]], dim=0))
+        if self.cfg.save_image:
+            for i in range(traj_pred_xstart.shape[0]):
+                self.save_torch_images(f"it{self.true_global_step}/{batch['uid'][i]}_{batch['sel_idx'][i] if 'sel_idx' in batch.keys() else 0}.png",
+                                       torch.cat([image_condition[i],final_out['denoiser_output_dict']['render_images'][i]], dim=0))
 
         if self.cfg.save_result_for_eval:
             for i in range(len(batch['uid'])):

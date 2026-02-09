@@ -21,6 +21,7 @@ import open3d as o3d
 from einops import rearrange
 from diffusionGS.models.gsrenderer.gs_core import imageseq2video, render_turntable, render_generic
 from diffusionGS.models.gsrenderer.cam_utils import get_interpolated_poses_many
+
 class SaverMixin:
     _save_dir: Optional[str] = None
     _wandb_logger: Optional[WandbLogger] = None

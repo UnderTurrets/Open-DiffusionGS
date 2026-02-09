@@ -4,19 +4,13 @@
 #     IDDPM: https://github.com/openai/improved-diffusion/blob/main/improved_diffusion/gaussian_diffusion.py
 
 
+import enum
 import math
 
 import numpy as np
 import torch as th
-import enum
 
 from .diffusion_utils import discretized_gaussian_log_likelihood, normal_kl
-from pdb import set_trace as stx
-import copy
-from tqdm import tqdm
-import os
-from einops import rearrange
-from PIL import Image
 
 
 def mean_flat(tensor):
@@ -347,23 +341,21 @@ class GaussianDiffusion:
         # stx()
         if t[0] > 0:
             input_batch['image'] = th.cat([input_batch['image'][:,0:1],input_batch['image_noisy']],dim=1) # select first images and update input
-            render_imgs, pred_guassians = model(input_batch, t)
-            #render_imgs, pred_guassians = model(**input_batch)
+            render_imgs, pred_gaussians = model(input_batch, t)
             model_output = render_imgs[:,1:]
             output_dict = {
                 'render_images':render_imgs,
-                'pred_gaussians':pred_guassians,
+                'pred_gaussians':pred_gaussians,
             }
         else:
             input_batch['image'] = th.cat([input_batch['image'][:,0:1],input_batch['image_noisy']],dim=1) # select first images and update input
-            render_imgs, pred_guassians = model(input_batch, t)
+            render_imgs, pred_gaussians = model(input_batch, t)
             model_output = render_imgs[:,1:]
             output_dict = {
                 'render_images':render_imgs,
-                'pred_gaussians':pred_guassians,
+                'pred_gaussians':pred_gaussians,
             }
-        # variance 的两种方式，一是模型直接输出
-        # 二是预先设定好的 variance (beta) 直接按照 timestep 取值
+        # variance 的两种方式，一是模型直接输出。二是预先设定好的 variance (beta) 直接按照 timestep 取值
         if self.model_var_type in [ModelVarType.LEARNED, ModelVarType.LEARNED_RANGE]:
             assert model_output.shape == (B, C * 2, *x.shape[2:])
             model_output, model_var_values = th.split(model_output, C, dim=1)
@@ -582,7 +574,6 @@ class GaussianDiffusion:
         if progress:
             # Lazy import so that we don't depend on tqdm.
             from tqdm.auto import tqdm  # 自动根据环境选择进度条
-
             indices = tqdm(indices)
 
         # stx()

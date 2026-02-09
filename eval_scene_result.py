@@ -1,4 +1,5 @@
 # Copyright (c) 2025 Haian Jin. Created for the LVSM project (ICLR 2025).
+# python eval_scene_result.py --path ./output/scene_results --chunk 8
 import os
 import json
 import torch
